@@ -1,0 +1,22 @@
+= Example
+
+First of all you need to create a WAR file by calling `./gradlew clean assemble`.
+
+After that you need to create a Docker image that contains the output by calling:
+
+`docker build -t lordofthejars/pingpong .`
+
+An alternative of both previous steps would be call next Gradle task:
+
+`./gradlew buildImage`
+
+This command will assemble the WAR file and create the image.
+
+Finally you can go to org.pingpong.PingPongTest test and execute the test.
+
+If you go to `dockerhost:7979` you will get access to hystrix dashboard.
+Then you only need to register next stream: `dockerhost:8081/pingpong/hystrix.stream` and you will be able to see hystrix dashboard of PingPong application.
+
+You can see a running demo at:
+
+https://youtu.be/et91cEJMFes

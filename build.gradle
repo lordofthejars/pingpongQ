@@ -1,0 +1,59 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.bmuschko:gradle-docker-plugin:3.0.0'
+        classpath "io.spring.gradle:dependency-management-plugin:0.5.3.RELEASE"
+    }
+}
+
+apply plugin: "io.spring.dependency-management"
+
+dependencyManagement {
+    imports {
+        mavenBom 'org.jboss.arquillian:arquillian-bom:1.1.10.Final'
+    }
+}
+
+apply plugin: 'war'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+group = "org.pingpong"
+version = "1.0"
+
+dependencies {
+    providedCompile 'javax:javaee-api:7.0'
+    compile 'com.netflix.hystrix:hystrix-core:1.5.3'
+    compile 'com.netflix.hystrix:hystrix-request-servlet:1.5.3'
+    compile 'com.netflix.hystrix:hystrix-metrics-event-stream:1.5.3'
+    testCompile group: 'org.jboss.arquillian.junit', name: 'arquillian-junit-standalone'
+    testCompile 'org.arquillian.cube.q:arquillian-cube-q-toxic:0.0.1'
+    testCompile 'junit:junit:4.12'
+
+}
+
+apply plugin: 'com.bmuschko.docker-remote-api'
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
+docker {
+    if (System.env.containsKey('DOCKER_HOST') && System.env.containsKey('DOCKER_CERT_PATH')) {
+        url = System.env.DOCKER_HOST.replace("tcp", "https")
+        certPath = new File(System.env.DOCKER_CERT_PATH)
+    }
+}
+
+task buildImage(type: DockerBuildImage) {
+    dependsOn assemble
+    inputDir = project.rootDir
+    tag = "lordofthejars/pingpong:latest"
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url  "http://dl.bintray.com/lordofthejars/maven"
+    }
+}

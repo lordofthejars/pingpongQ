@@ -1,0 +1,16 @@
+mypingpong:
+  image: lordofthejars/pingpong
+  ports:
+    - "8081:8080"
+  links:
+    - pingpong:pingpong
+
+pingpong:
+  image: jonmorehouse/ping-pong
+  expose:
+      - "8080"
+
+hystrixdashboard:
+  image: fabric8/hystrix-dashboard:1.0.17
+  ports:
+    - "7979:8080"
