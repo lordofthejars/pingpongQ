@@ -30,7 +30,7 @@ dependencies {
     compile 'com.netflix.hystrix:hystrix-request-servlet:1.5.3'
     compile 'com.netflix.hystrix:hystrix-metrics-event-stream:1.5.3'
     testCompile group: 'org.jboss.arquillian.junit', name: 'arquillian-junit-standalone'
-    testCompile 'org.arquillian.cube.q:arquillian-cube-q-toxic:0.0.1'
+    testCompile 'org.arquillian.cube.q:arquillian-cube-q-toxic:1.0.0.Alpha2'
     testCompile 'junit:junit:4.12'
 
 }

@@ -1,11 +1,9 @@
 package org.pingpong;
 
 import org.arquillian.cube.HostIp;
-import org.arquillian.cube.q.api.Q;
-import org.hamcrest.CoreMatchers;
+import org.arquillian.cube.q.api.NetworkChaos;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.arquillian.test.api.ArquillianResource;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -15,11 +13,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.TimeUnit;
 
+import static org.arquillian.cube.q.api.NetworkChaos.JitterType.jitter;
+import static org.arquillian.cube.q.api.NetworkChaos.LatencyType.latencyInMillis;
+import static org.arquillian.cube.q.api.NetworkChaos.ToxicityType.toxicity;
 import static org.arquillian.cube.q.api.Q.DurationRunCondition.during;
-import static org.arquillian.cube.q.api.Q.JitterType.jitter;
-import static org.arquillian.cube.q.api.Q.LatencyType.latency;
-import static org.arquillian.cube.q.api.Q.ToxicDirectionStream.DOWNSTREAM;
-import static org.arquillian.cube.q.api.Q.ToxicityType.toxicity;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -30,7 +27,7 @@ public class PingPongTest {
     private String ip;
 
     @ArquillianResource
-    private org.arquillian.cube.q.api.Q Q;
+    private NetworkChaos networkChaos;
 
     @Test
     public void shouldPingPong() throws Exception {
@@ -53,50 +50,13 @@ public class PingPongTest {
             assertThat(response.toString(), is("{  \"status\": \"OK\"}"));
         }
 
-        Q.on("pingpong", 8080).exec(during(15, TimeUnit.SECONDS), () -> {
-            URL url = new URL("http://" + ip + ":" + 8081 + "/pingpong/ping");
-            HttpURLConnection con = (HttpURLConnection) url.openConnection();
-            con.setRequestMethod("GET");
+        {
+            // With Q and no toxicity
+            networkChaos.on("pingpong", 8080).exec(during(15, TimeUnit.SECONDS), () -> {
+                URL url = new URL("http://" + ip + ":" + 8081 + "/pingpong/ping");
+                HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                con.setRequestMethod("GET");
 
-            BufferedReader in = new BufferedReader(
-                    new InputStreamReader(con.getInputStream()));
-            String inputLine;
-            StringBuffer response = new StringBuffer();
-
-            while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
-            }
-            in.close();
-
-            assertThat(response.toString(), is("{  \"status\": \"OK\"}"));
-        });
-
-        Q.on("pingpong", 8080).latency(latency(500), jitter(0),
-                                        toxicity(0.5f), DOWNSTREAM)
-                               .exec(during(15, TimeUnit.SECONDS), () -> {
-            URL url = new URL("http://" + ip + ":" + 8081 + "/pingpong/ping");
-            HttpURLConnection con = (HttpURLConnection) url.openConnection();
-            con.setRequestMethod("GET");
-
-            BufferedReader in = new BufferedReader(
-                    new InputStreamReader(con.getInputStream()));
-            String inputLine;
-            StringBuffer response = new StringBuffer();
-
-            while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
-            }
-            in.close();
-
-            assertThat(response.toString(), is("{  \"status\": \"OK\"}"));
-        });
-
-        Q.on("pingpong", 8080).down().exec(during(10, TimeUnit.SECONDS), () -> {
-            URL url = new URL("http://" + ip + ":" + 8081 + "/pingpong/ping");
-            HttpURLConnection con = (HttpURLConnection) url.openConnection();
-            con.setRequestMethod("GET");
-
-            try {
                 BufferedReader in = new BufferedReader(
                         new InputStreamReader(con.getInputStream()));
                 String inputLine;
@@ -105,12 +65,57 @@ public class PingPongTest {
                 while ((inputLine = in.readLine()) != null) {
                     response.append(inputLine);
                 }
-
                 in.close();
+
                 assertThat(response.toString(), is("{  \"status\": \"OK\"}"));
-            } catch ( Exception e) {
-            }
-        });
+            });
+        }
+
+        {
+            // With Q and latency
+            networkChaos.on("pingpong", 8080).latency(latencyInMillis(500), jitter(0),
+                    toxicity(0.5f), NetworkChaos.ToxicDirectionStream.DOWNSTREAM)
+                    .exec(during(15, TimeUnit.SECONDS), () -> {
+                        URL url = new URL("http://" + ip + ":" + 8081 + "/pingpong/ping");
+                        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                        con.setRequestMethod("GET");
+
+                        BufferedReader in = new BufferedReader(
+                                new InputStreamReader(con.getInputStream()));
+                        String inputLine;
+                        StringBuffer response = new StringBuffer();
+
+                        while ((inputLine = in.readLine()) != null) {
+                            response.append(inputLine);
+                        }
+                        in.close();
+
+                        assertThat(response.toString(), is("{  \"status\": \"OK\"}"));
+                    });
+        }
+
+        {
+            networkChaos.on("pingpong", 8080).down().exec(during(10, TimeUnit.SECONDS), () -> {
+                URL url = new URL("http://" + ip + ":" + 8081 + "/pingpong/ping");
+                HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                con.setRequestMethod("GET");
+
+                try {
+                    BufferedReader in = new BufferedReader(
+                            new InputStreamReader(con.getInputStream()));
+                    String inputLine;
+                    StringBuffer response = new StringBuffer();
+
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+
+                    in.close();
+                    assertThat(response.toString(), is("{  \"status\": \"OK\"}"));
+                } catch (Exception e) {
+                }
+            });
+        }
 
     }
 

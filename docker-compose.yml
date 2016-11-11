@@ -1,5 +1,5 @@
 mypingpong:
-  image: lordofthejars/pingpong
+  image: lordofthejars/pingpong:2
   ports:
     - "8081:8080"
   links:
